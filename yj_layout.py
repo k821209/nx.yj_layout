@@ -2,10 +2,13 @@ import math
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
+from random import randint
 
 def YJlayout(gnx): 
     #= description
     #= select largest connected Vertexcluster and draw layout using defined rule
+	#= In principle, the rule tries to strech out high degree nodes from each other while low degree nodes stay near high degree hubs. 
+	#= The edge length is proportional to min(node1.degree, node2.degree), and inverse proportional to abs(node1.degree - node2.degree)
     #= rule description can be found in document. 
 	#= genes,pos,sizes = yj_layout.YJlayout(gnx), where gnx is graph from networkx
 	
@@ -49,7 +52,7 @@ def YJlayout(gnx):
 
         interactors_list         = gnx.neighbors(genename)
         interactors_gravity_list = [gnx.degree(x) for x in interactors_list]
-        edge_l_list              = ['%0.3f'%(float(min(gravity,gravity_i)*(gravity+gravity_i)) /(float(gravity + gravity_i) * (abs(gravity - gravity_i)+1))) for gravity_i in interactors_gravity_list]
+        edge_l_list              = ['%0.3f'%(float(min(gravity,gravity_i)) /((abs(gravity - gravity_i)+1))) for gravity_i in interactors_gravity_list]
 
         dicEdge2theta_interval   = dict(zip(list(set(edge_l_list)),[2*np.pi/edge_l_list.count(x) for x in set(edge_l_list)])) 
         dicEdge2interactors      = {}
@@ -71,7 +74,7 @@ def YJlayout(gnx):
                     l                    = float(edge_l)*max_d + min_d
                     x1                   = xaxis + l*np.cos(theta)
                     y1                   = yaxis - l*np.sin(theta)
-                    size                 = float(irad_size + 10*theta_interval + 50*gnx.degree(interactor))/10#irad_size*(sigmoid(theta_interval)) 
+                    size                 = float(irad_size + 0.01*theta_interval + 2*gnx.degree(interactor))#irad_size*(sigmoid(theta_interval)) 
                     dicG2pos[interactor] = (x1,y1,size)
 
 
