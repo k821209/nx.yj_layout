@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from random import randint
 
-def YJlayout(gnx): 
+def YJlayout(gnx_in): 
     #= description
     #= select largest connected Vertexcluster and draw layout using defined rule
 	#= In principle, the rule tries to strech out high degree nodes from each other while low degree nodes stay near high degree hubs. 
@@ -15,20 +15,20 @@ def YJlayout(gnx):
 	
     #+ equivalent igraph.clusters()
     clusters = []
-    for node in gnx.node.keys():
+    for node in gnx_in.node.keys():
         try:
             if node in set(clusters[-1]):
                 pass
             else:
-                if len(nx.shortest_path(gnx,node).keys()) > 2:
-                    clusters.append(sorted(nx.shortest_path(gnx,node).keys()))
+                if len(nx.shortest_path(gnx_in,node).keys()) > 2:
+                    clusters.append(sorted(nx.shortest_path(gnx_in,node).keys()))
         except IndexError:
-            clusters.append(sorted(nx.shortest_path(gnx,node).keys()))
+            clusters.append(sorted(nx.shortest_path(gnx_in,node).keys()))
     clusters.sort(key=lambda x : len(x),reverse=True)
     #-
 
     each_cluster_genename_list = clusters[0]
-    each_cluster_genename_list.sort(key=lambda x : gnx.degree(x),reverse=True)
+    each_cluster_genename_list.sort(key=lambda x : gnx_in.degree(x),reverse=True)
 
     
     def cos_modify(x):
@@ -48,12 +48,17 @@ def YJlayout(gnx):
     dicG2pos        = {}
     def G2pos(genename,option=(start_x,start_y,rad_size)):
         xaxis, yaxis, irad_size  = option
-        gravity                  = gnx.degree(genename) 
+        gravity                  = gnx_in.degree(genename) 
 
-        interactors_list         = gnx.neighbors(genename)
-        interactors_gravity_list = [gnx.degree(x) for x in interactors_list]
-        edge_l_list              = ['%0.3f'%(float(min(gravity,gravity_i)) /((abs(gravity - gravity_i)+1))) for gravity_i in interactors_gravity_list]
-
+        interactors_list         = gnx_in.neighbors(genename)
+        interactors_gravity_list = [gnx_in.degree(x) for x in interactors_list]
+        edge_l_list              = ['%0.3f'%(float(min(gravity,gravity_i)) /((abs(gravity - gravity_i)+1))) if min(gravity,gravity_i) > 1 else 0 for gravity_i in interactors_gravity_list]
+        dicG2L = dict(zip(interactors_list,edge_l_list))
+        #if genename == 'AT4G10930':
+        #    print(dicG2L['AT1G73790'])
+        #    print(interactors_list)
+        #    print(interactors_gravity_list)
+        #    print(edge_l_list)
         dicEdge2theta_interval   = dict(zip(list(set(edge_l_list)),[2*np.pi/edge_l_list.count(x) for x in set(edge_l_list)])) 
         dicEdge2interactors      = {}
         for i, edge_l in enumerate(edge_l_list):
@@ -73,8 +78,8 @@ def YJlayout(gnx):
                 except KeyError:
                     l                    = float(edge_l)*max_d + min_d
                     x1                   = xaxis + l*np.cos(theta)
-                    y1                   = yaxis - l*np.sin(theta)
-                    size                 = float(irad_size + 0.01*theta_interval + 2*gnx.degree(interactor))#irad_size*(sigmoid(theta_interval)) 
+                    y1                   = yaxis + l*np.sin(theta)
+                    size                 = float(irad_size + 0.01*theta_interval + 2*gnx_in.degree(interactor))#irad_size*(sigmoid(theta_interval)) 
                     dicG2pos[interactor] = (x1,y1,size)
 
 
